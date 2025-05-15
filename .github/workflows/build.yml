@@ -1,33 +1,32 @@
 name: Build APK
-on: [push] # Запускать при любом push в репозиторий
+on: [push]
 
 jobs:
   build-apk:
-    runs-on: ubuntu-latest # Сборка на сервере с Ubuntu
+    runs-on: ubuntu-latest
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3 # Клонируем репозиторий
+    - uses: actions/checkout@v4  # Обновлено до v4
     
     - name: Setup Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v4  # Обновлено до v4
       with:
-        python-version: 3.9
+        python-version: "3.11"  # Используем актуальную версию Python
     
     - name: Install dependencies
-      run: | # Устанавливаем системные зависимости
+      run: |
         sudo apt-get update
         sudo apt-get install -y openjdk-17-jdk
         pip install buildozer
     
     - name: Build APK
-      run: | # Запуск сборки
+      run: |
         buildozer init
-        sed -i "s/^requirements = .*/requirements = python3, pygame, kivy/" buildozer.spec
+        echo -e "\n[app]\nrequirements = python3, pygame, kivy" >> buildozer.spec
         buildozer -v android debug
     
     - name: Upload APK
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4  # Обновлено до v4
       with:
-        name: naturalomer.apk
-        path: bin/*.apk # Путь к собранному APK
+        name: naturalomer
+        path: bin/*.apk
