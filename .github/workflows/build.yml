@@ -11,22 +11,30 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.11"
+        python-version: "3.9"  # Меняем на проверенную версию
 
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y openjdk-17-jdk zlib1g-dev
+        # Добавляем системные зависимости
+        sudo apt-get install -y \
+            openjdk-17-jdk \
+            zlib1g-dev \
+            build-essential \
+            libssl-dev \
+            python3-venv
+        # Устанавливаем Python-пакеты
+        pip install --upgrade pip wheel setuptools
+        pip install cython==0.29.36  # Явно указываем версию
         pip install buildozer
 
     - name: Configure and build
       run: |
-        # Создаем новый spec-файл
         buildozer init
-        # Правим существующий файл вместо добавления
-        sed -i "s/^requirements = .*/requirements = python3, pygame, kivy, sdl2_ttf/" buildozer.spec
-        sed -i "s/^title = .*/title = Натураломер/" buildozer.spec
-        sed -i "s/^package.name = .*/package.name = naturalomer/" buildozer.spec
+        # Правим spec-файл
+        sed -i "s/^requirements = .*/requirements = python3, sdl2, pygame, kivy/" buildozer.spec
+        sed -i "s/^android.ndk = .*/android.ndk = 25b/" buildozer.spec
+        sed -i "s/^android.sdk = .*/android.sdk = 26.1.1/" buildozer.spec
         
         # Собираем APK
         buildozer -v android debug
