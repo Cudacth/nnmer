@@ -6,27 +6,33 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v4  # Обновлено до v4
+    - uses: actions/checkout@v4
     
     - name: Setup Python
-      uses: actions/setup-python@v4  # Обновлено до v4
+      uses: actions/setup-python@v4
       with:
-        python-version: "3.11"  # Используем актуальную версию Python
-    
+        python-version: "3.11"
+
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y openjdk-17-jdk
+        sudo apt-get install -y openjdk-17-jdk zlib1g-dev
         pip install buildozer
-    
-    - name: Build APK
+
+    - name: Configure and build
       run: |
+        # Создаем новый spec-файл
         buildozer init
-        echo -e "\n[app]\nrequirements = python3, pygame, kivy" >> buildozer.spec
+        # Правим существующий файл вместо добавления
+        sed -i "s/^requirements = .*/requirements = python3, pygame, kivy, sdl2_ttf/" buildozer.spec
+        sed -i "s/^title = .*/title = Натураломер/" buildozer.spec
+        sed -i "s/^package.name = .*/package.name = naturalomer/" buildozer.spec
+        
+        # Собираем APK
         buildozer -v android debug
-    
+
     - name: Upload APK
-      uses: actions/upload-artifact@v4  # Обновлено до v4
+      uses: actions/upload-artifact@v4
       with:
         name: naturalomer
         path: bin/*.apk
