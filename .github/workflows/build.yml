@@ -10,28 +10,26 @@ jobs:
     
     - name: Setup environment
       run: |
-        # Установка базовых зависимостей
         sudo apt-get update
         sudo apt-get install -y \
             openjdk-17-jdk \
             zlib1g-dev \
-            libncurses5 \
+            libncurses-dev \
             libssl-dev \
             python3-venv \
-            unzip
+            unzip \
+            libstdc++6 \
+            libz-dev
 
     - name: Install Android tools
       run: |
-        # Настройка Android SDK
         mkdir -p ~/android-sdk
         wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
         unzip commandlinetools-linux-*.zip -d ~/android-sdk
         mv ~/android-sdk/cmdline-tools ~/android-sdk/latest
         
-        # Принятие лицензий
         yes | ~/android-sdk/latest/bin/sdkmanager --licenses
         
-        # Установка компонентов
         ~/android-sdk/latest/bin/sdkmanager \
           "platform-tools" \
           "platforms;android-33" \
@@ -39,7 +37,6 @@ jobs:
           "ndk;25.1.8937393" \
           "cmdline-tools;latest"
 
-        # Добавляем пути в переменные окружения
         echo "$HOME/android-sdk/build-tools/34.0.0" >> $GITHUB_PATH
         echo "$HOME/android-sdk/platform-tools" >> $GITHUB_PATH
 
@@ -51,18 +48,15 @@ jobs:
 
     - name: Configure and build
       run: |
-        # Настройка путей
         export ANDROID_SDK_ROOT="$HOME/android-sdk"
         export ANDROID_NDK_HOME="$HOME/android-sdk/ndk/25.1.8937393"
         
-        # Конфигурация Buildozer
         buildozer init
         sed -i "s/^requirements = .*/requirements = python3, sdl2, pygame, kivy/" buildozer.spec
         sed -i "s|^android.ndk_path =.*|android.ndk_path = $ANDROID_NDK_HOME|" buildozer.spec
         sed -i "s|^android.sdk_path =.*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
         sed -i "s/^android.arch = .*/android.arch = arm64-v8a/" buildozer.spec
         
-        # Сборка APK
         buildozer -v android debug
 
     - name: Upload APK
