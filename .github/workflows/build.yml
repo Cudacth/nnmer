@@ -11,32 +11,53 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
-        python-version: "3.9"  # Меняем на проверенную версию
+        python-version: "3.9"
 
-    - name: Install dependencies
+    - name: Install Android tools
       run: |
         sudo apt-get update
-        # Добавляем системные зависимости
+        # Основные зависимости
         sudo apt-get install -y \
             openjdk-17-jdk \
             zlib1g-dev \
             build-essential \
             libssl-dev \
-            python3-venv
-        # Устанавливаем Python-пакеты
+            python3-venv \
+            android-sdk \
+            android-sdk-platform-tools-common
+
+        # Устанавливаем Android NDK и SDK через sdkmanager
+        mkdir -p ~/android-sdk/cmdline-tools
+        wget https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+        unzip commandlinetools-linux-*.zip -d ~/android-sdk/cmdline-tools
+        mv ~/android-sdk/cmdline-tools/cmdline-tools ~/android-sdk/cmdline-tools/latest
+        
+        # Принимаем лицензии
+        yes | ~/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+        
+        # Устанавливаем необходимые компоненты
+        ~/android-sdk/cmdline-tools/latest/bin/sdkmanager \
+          "platform-tools" \
+          "platforms;android-33" \
+          "build-tools;34.0.0" \
+          "ndk;25.1.8937393"
+
+    - name: Install Python dependencies
+      run: |
         pip install --upgrade pip wheel setuptools
-        pip install cython==0.29.36  # Явно указываем версию
+        pip install cython==0.29.36
         pip install buildozer
 
     - name: Configure and build
       run: |
-        buildozer init
-        # Правим spec-файл
-        sed -i "s/^requirements = .*/requirements = python3, sdl2, pygame, kivy/" buildozer.spec
-        sed -i "s/^android.ndk = .*/android.ndk = 25b/" buildozer.spec
-        sed -i "s/^android.sdk = .*/android.sdk = 26.1.1/" buildozer.spec
+        export ANDROID_SDK_ROOT="$HOME/android-sdk"
+        export ANDROID_NDK_HOME="$HOME/android-sdk/ndk/25.1.8937393"
         
-        # Собираем APK
+        buildozer init
+        sed -i "s/^requirements = .*/requirements = python3, sdl2, pygame, kivy/" buildozer.spec
+        sed -i "s|^android.ndk_path =.*|android.ndk_path = $ANDROID_NDK_HOME|" buildozer.spec
+        sed -i "s|^android.sdk_path =.*|android.sdk_path = $ANDROID_SDK_ROOT|" buildozer.spec
+        
         buildozer -v android debug
 
     - name: Upload APK
