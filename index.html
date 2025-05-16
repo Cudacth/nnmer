@@ -77,7 +77,7 @@
         function getGradientColor(progress) {
             const r = Math.floor(255 * (progress/100));
             const g = Math.floor(255 * (1 - progress/100));
-            return rgb(${r},${g},10);
+            return `rgb(${r},${g},10)`;
         }
 
         function updateProgress() {
@@ -108,7 +108,7 @@
             progressBar.style.width = percent + '%';
             progressBar.style.backgroundColor = getGradientColor(percent);
             percentElement.textContent = Math.floor(percent) + '%';
-            button.style.transform = scale(${pulseScale});
+            button.style.transform = `scale(${pulseScale})`;
 
             requestAnimationFrame(updateProgress);
         }
