@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Натураломер</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            touch-action: none;
+        }
+
+        #title {
+            color: white;
+            margin: 20px 0;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        #progress-container {
+            width: 500px;
+            height: 40px;
+            background: #333;
+            border-radius: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.1s;
+        }
+
+        #percent {
+            color: white;
+            font-size: 4em;
+            margin: 20px 0;
+            font-family: Impact, sans-serif;
+        }
+
+        #button {
+            width: 180px;
+            height: 180px;
+            cursor: pointer;
+            transition: transform 0.1s;
+            position: absolute;
+            bottom: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1 id="title">🌈Натураломер</h1>
+    <div id="percent">0%</div>
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+    <img id="button" src="Clop.png" alt="Button">
+
+    <script>
+        const button = document.getElementById('button');
+        const progressBar = document.getElementById('progress-bar');
+        const percentElement = document.getElementById('percent');
+        const audio = new Audio('beppn.mp3');
+        audio.volume = 0.3;
+
+        let isPressed = false;
+        let percent = 0;
+        let pulseScale = 1;
+        let lastTime = 0;
+
+        function getGradientColor(progress) {
+            const r = Math.floor(255 * (progress/100));
+            const g = Math.floor(255 * (1 - progress/100));
+            return `rgb(${r},${g},10)`;
+        }
+
+        function updateProgress() {
+            const now = Date.now();
+            const deltaTime = (now - lastTime)/1000;
+            lastTime = now;
+
+            if(isPressed) {
+                percent += Math.random() * 2.4 + 0.8;
+                if(percent > 100) percent = 100;
+                pulseScale = 1 + Math.sin(now * 0.005) * 0.15;
+                
+                if(audio.paused) {
+                    audio.loop = true;
+                    audio.play();
+                }
+            } else {
+                percent -= 4.5 * deltaTime * 60;
+                if(percent < 0) percent = 0;
+                pulseScale = 1;
+                
+                if(!audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
+            }
+
+            progressBar.style.width = percent + '%';
+            progressBar.style.backgroundColor = getGradientColor(percent);
+            percentElement.textContent = Math.floor(percent) + '%';
+            button.style.transform = `scale(${pulseScale})`;
+
+            requestAnimationFrame(updateProgress);
+        }
+
+        // Обработчики событий
+        button.addEventListener('mousedown', () => {
+            isPressed = true;
+            lastTime = Date.now();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isPressed = false;
+        });
+
+        // Для мобильных устройств
+        button.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isPressed = true;
+            lastTime = Date.now();
+        });
+
+        document.addEventListener('touchend', () => {
+            isPressed = false;
+        });
+
+        // Запуск анимации
+        updateProgress();
+    </script>
+</body>
+</html>
