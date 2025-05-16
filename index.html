@@ -3,15 +3,45 @@
 <head>
     <title>Натураломер</title>
     <style>
-        /* ... предыдущие стили ... */
-        
-        #buttons-container {
-            position: absolute;
-            bottom: 50px;
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #000;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 20px;
+            touch-action: none;
+        }
+
+        #title {
+            color: white;
+            margin: 20px 0;
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        #progress-container {
+            width: 500px;
+            height: 40px;
+            background: #333;
+            border-radius: 20px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.1s;
+        }
+
+        #percent {
+            color: white;
+            font-size: 4em;
+            margin: 20px 0;
+            font-family: Impact, sans-serif;
         }
 
         #button {
@@ -19,12 +49,8 @@
             height: 180px;
             cursor: pointer;
             transition: transform 0.1s;
-        }
-
-        #random-button {
-            width: 180px;
-            height: 60px;
-            cursor: pointer;
+            position: absolute;
+            bottom: 100px;
         }
     </style>
 </head>
@@ -34,74 +60,82 @@
     <div id="progress-container">
         <div id="progress-bar"></div>
     </div>
-    
-    <div id="buttons-container">
-        <img id="button" src="Clop.png" alt="Button">
-        <img id="random-button" src="random.png" alt="Рандом">
-    </div>
+    <img id="button" src="Clop.png" alt="Button">
 
     <script>
-        // ... предыдущие переменные ...
+        const button = document.getElementById('button');
+        const progressBar = document.getElementById('progress-bar');
+        const percentElement = document.getElementById('percent');
+        const audio = new Audio('beppn.mp3');
+        audio.volume = 0.3;
 
-        let isRandomActive = false;
-        let randomInterval = null;
+        let isPressed = false;
+        let percent = 0;
+        let pulseScale = 1;
+        let lastTime = 0;
 
-        // Функция для рандомной анимации
-        function startRandomAnimation() {
-            if(isRandomActive) return;
-            
-            isRandomActive = true;
-            isPressed = false;
-            audio.pause();
-            audio.currentTime = 0;
-            
-            const startTime = Date.now();
-            const duration = 4000;
-
-            randomInterval = setInterval(() => {
-                const progress = (Date.now() - startTime) / duration;
-                
-                // Случайные колебания
-                percent += (Math.random() - 0.5) * 20;
-                percent = Math.max(0, Math.min(100, percent));
-                
-                // Обновление элементов
-                progressBar.style.width = percent + '%';
-                progressBar.style.backgroundColor = getGradientColor(percent);
-                percentElement.textContent = Math.floor(percent) + '%';
-
-                // Завершение анимации
-                if(progress >= 1) {
-                    clearInterval(randomInterval);
-                    isRandomActive = false;
-                    const result = Math.floor(percent);
-                    percentElement.innerHTML = `${result}% Натурализма <span style="font-size: 0.8em">😨</span>`;
-                    
-                    setTimeout(() => {
-                        percentElement.textContent = `${result}%`;
-                    }, 3000);
-                }
-            }, 50);
+        function getGradientColor(progress) {
+            const r = Math.floor(255 * (progress/100));
+            const g = Math.floor(255 * (1 - progress/100));
+            return `rgb(${r},${g},10)`;
         }
 
-        // Обработчик для кнопки рандома
-        document.getElementById('random-button').addEventListener('click', startRandomAnimation);
-        document.getElementById('random-button').addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            startRandomAnimation();
-        });
-
-        // Модифицированная функция updateProgress
         function updateProgress() {
-            if(isRandomActive) {
-                requestAnimationFrame(updateProgress);
-                return;
+            const now = Date.now();
+            const deltaTime = (now - lastTime)/1000;
+            lastTime = now;
+
+            if(isPressed) {
+                percent += Math.random() * 2.4 + 0.8;
+                if(percent > 100) percent = 100;
+                pulseScale = 1 + Math.sin(now * 0.005) * 0.15;
+                
+                if(audio.paused) {
+                    audio.loop = true;
+                    audio.play();
+                }
+            } else {
+                percent -= 4.5 * deltaTime * 60;
+                if(percent < 0) percent = 0;
+                pulseScale = 1;
+                
+                if(!audio.paused) {
+                    audio.pause();
+                    audio.currentTime = 0;
+                }
             }
 
-            // ... остальная часть оригинальной функции updateProgress ...
+            progressBar.style.width = percent + '%';
+            progressBar.style.backgroundColor = getGradientColor(percent);
+            percentElement.textContent = Math.floor(percent) + '%';
+            button.style.transform = `scale(${pulseScale})`;
+
+            requestAnimationFrame(updateProgress);
         }
 
-        // ... остальной код ...
+        // Обработчики событий
+        button.addEventListener('mousedown', () => {
+            isPressed = true;
+            lastTime = Date.now();
+        });
+
+        document.addEventListener('mouseup', () => {
+            isPressed = false;
+        });
+
+        // Для мобильных устройств
+        button.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isPressed = true;
+            lastTime = Date.now();
+        });
+
+        document.addEventListener('touchend', () => {
+            isPressed = false;
+        });
+
+        // Запуск анимации
+        updateProgress();
     </script>
 </body>
 </html>
