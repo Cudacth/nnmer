@@ -4,6 +4,7 @@
     <title>Натураломер</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
+        /* Существующие стили */
         body {
             margin: 0;
             overflow: hidden;
@@ -15,7 +16,6 @@
             touch-action: none;
             min-height: 100vh;
         }
-
         #title {
             color: white;
             margin: 20px 0;
@@ -23,7 +23,6 @@
             text-shadow: 0 0 10px rgba(255,255,255,0.3);
             text-align: center;
         }
-
         #progress-container {
             width: min(500px, 90%);
             height: 40px;
@@ -33,7 +32,6 @@
             overflow: hidden;
             position: relative;
         }
-
         #progress-bar {
             width: 0%;
             height: 100%;
@@ -42,7 +40,6 @@
             position: relative;
             overflow: hidden;
         }
-
         #progress-bar::after {
             content: '';
             position: absolute;
@@ -53,7 +50,6 @@
             background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2));
             animation: shine 2s infinite;
         }
-
         #percent {
             color: white;
             font-size: min(4em, 12vw);
@@ -61,7 +57,6 @@
             font-family: Impact, sans-serif;
             text-shadow: 0 0 8px rgba(255,255,255,0.3);
         }
-
         #button {
             width: min(180px, 40vw);
             height: min(180px, 40vw);
@@ -71,7 +66,22 @@
             bottom: 10vh;
             filter: drop-shadow(0 0 10px rgba(255,255,255,0.3));
         }
-
+        /* Новые стили для кнопки рандома */
+        #random-button {
+            position: absolute;
+            bottom: 25vh;
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: 0.3s;
+        }
+        #random-button:hover {
+            background: #45a049;
+        }
         @keyframes shine {
             0% { transform: translateX(-100%); }
             100% { transform: translateX(100%); }
@@ -84,19 +94,23 @@
     <div id="progress-container">
         <div id="progress-bar"></div>
     </div>
+    <button id="random-button">Рандом</button>
     <img id="button" src="Clop.png" alt="Button">
 
     <script>
         const button = document.getElementById('button');
         const progressBar = document.getElementById('progress-bar');
         const percentElement = document.getElementById('percent');
+        const randomButton = document.getElementById('random-button');
         const audio = new Audio('beppn.mp3');
         audio.volume = 0.3;
 
         let isPressed = false;
+        let isRandomMode = false;
         let percent = 0;
         let pulseScale = 1;
         let lastTime = 0;
+        let randomInterval = null;
 
         function getGradientColor(progress) {
             const r = Math.floor(255 * (progress/100));
@@ -109,23 +123,25 @@
             const deltaTime = (now - lastTime)/1000;
             lastTime = now;
 
-            if(isPressed) {
-                percent += Math.random() * 2.4 + 0.8;
-                if(percent >= 100) percent = 100;
-                pulseScale = 1 + Math.sin(now * 0.005) * 0.15;
-                
-                if(audio.paused) {
-                    audio.loop = true;
-                    audio.play();
-                }
-            } else {
-                percent -= 4.5 * deltaTime * 60;
-                if(percent < 0) percent = 0;
-                pulseScale = 1;
-                
-                if(!audio.paused) {
-                    audio.pause();
-                    audio.currentTime = 0;
+            if(!isRandomMode) {
+                if(isPressed) {
+                    percent += Math.random() * 2.4 + 0.8;
+                    if(percent >= 100) percent = 100;
+                    pulseScale = 1 + Math.sin(now * 0.005) * 0.15;
+                    
+                    if(audio.paused) {
+                        audio.loop = true;
+                        audio.play();
+                    }
+                } else {
+                    percent -= 4.5 * deltaTime * 60;
+                    if(percent < 0) percent = 0;
+                    pulseScale = 1;
+                    
+                    if(!audio.paused) {
+                        audio.pause();
+                        audio.currentTime = 0;
+                    }
                 }
             }
 
@@ -138,9 +154,25 @@
             requestAnimationFrame(updateProgress);
         }
 
-        // Обработчики событий
+        // Обработчик рандома
+        randomButton.addEventListener('click', () => {
+            isRandomMode = !isRandomMode;
+            randomButton.textContent = isRandomMode ? 'Стоп' : 'Рандом';
+            
+            if(isRandomMode) {
+                audio.pause();
+                audio.currentTime = 0;
+                randomInterval = setInterval(() => {
+                    percent = Math.random() * 100;
+                }, 50);
+            } else {
+                clearInterval(randomInterval);
+            }
+        });
+
+        // Существующие обработчики
         button.addEventListener('mousedown', () => {
-            isPressed = true;
+            if(!isRandomMode) isPressed = true;
             lastTime = Date.now();
             if(navigator.vibrate) navigator.vibrate(50);
         });
@@ -151,7 +183,7 @@
 
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            isPressed = true;
+            if(!isRandomMode) isPressed = true;
             lastTime = Date.now();
             if(navigator.vibrate) navigator.vibrate(50);
         });
